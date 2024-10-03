@@ -1,0 +1,22 @@
+# Terraform state files
+*.tfstate
+*.tfstate.backup
+.terraform/
+
+# Arquivos de variáveis com valores sensíveis
+*.tfvars
+
+# Credenciais
+credentials.json
+*.pem
+*.key
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Logs
+*.log
+
+# Outros arquivos específicos do projeto
+
