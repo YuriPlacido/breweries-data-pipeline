@@ -1,89 +1,50 @@
 # main.tf
 
-provider "aws" {
-  region = var.aws_region
+# Chamar o módulo s3
+module "s3" {
+  source = "./modules/s3"
+
+  project_name = var.project_name
+  environment  = var.environment
 }
 
-# Nome dos buckets
-locals {
-  bronze_bucket_name = "${var.project_name}-bronze-${var.environment}"
-  silver_bucket_name = "${var.project_name}-silver-${var.environment}"
-  gold_bucket_name   = "${var.project_name}-gold-${var.environment}"
+# Chamar o módulo iam_role
+module "iam_role" {
+  source = "./modules/iam_role"
+
+  project_name    = var.project_name
+  environment     = var.environment
+  gold_bucket_arn = "arn:aws:s3:::${module.s3.gold_bucket_name}"
 }
 
-# Definições de recursos usando locals
+# Chamar o módulo iam_user
+module "iam_user" {
+  source = "./modules/iam_user"
 
-# Bucket S3 da Camada Bronze
-resource "aws_s3_bucket" "bronze_bucket" {
-  bucket = local.bronze_bucket_name
-  acl    = "private"
-
-  tags = {
-    Name        = local.bronze_bucket_name
-    Environment = var.environment
-    Project     = var.project_name
-    Layer       = "bronze"
-  }
-
-  versioning {
-    enabled = true
-  }
-
-  server_side_encryption_configuration {
-    rule {
-      apply_server_side_encryption_by_default {
-        sse_algorithm = "AES256"
-      }
-    }
-  }
+  project_name       = var.project_name
+  environment        = var.environment
+  bronze_bucket_arn  = "arn:aws:s3:::${module.s3.bronze_bucket_name}"
+  silver_bucket_arn  = "arn:aws:s3:::${module.s3.silver_bucket_name}"
+  gold_bucket_arn    = "arn:aws:s3:::${module.s3.gold_bucket_name}"
 }
 
-# Bucket S3 da Camada Silver
-resource "aws_s3_bucket" "silver_bucket" {
-  bucket = local.silver_bucket_name
-  acl    = "private"
+# Chamar o módulo glue_crawler
+module "glue_crawler" {
+  source = "./modules/glue_crawler"
 
-  tags = {
-    Name        = local.silver_bucket_name
-    Environment = var.environment
-    Project     = var.project_name
-    Layer       = "silver"
-  }
-
-  versioning {
-    enabled = true
-  }
-
-  server_side_encryption_configuration {
-    rule {
-      apply_server_side_encryption_by_default {
-        sse_algorithm = "AES256"
-      }
-    }
-  }
+  project_name    = var.project_name
+  environment     = var.environment
+  glue_role_arn   = module.iam_role.glue_role_arn
+  gold_bucket_name = module.s3.gold_bucket_name
 }
 
-# Bucket S3 da Camada Gold
-resource "aws_s3_bucket" "gold_bucket" {
-  bucket = local.gold_bucket_name
-  acl    = "private"
+# Chamar o módulo lambda
+module "lambda" {
+  source = "./modules/lambda"
 
-  tags = {
-    Name        = local.gold_bucket_name
-    Environment = var.environment
-    Project     = var.project_name
-    Layer       = "gold"
-  }
-
-  versioning {
-    enabled = true
-  }
-
-  server_side_encryption_configuration {
-    rule {
-      apply_server_side_encryption_by_default {
-        sse_algorithm = "AES256"
-      }
-    }
-  }
+  project_name      = var.project_name
+  environment       = var.environment
+  lambda_role_arn   = module.iam_role.lambda_role_arn
+  glue_crawler_name = module.glue_crawler.glue_crawler_name
+  gold_bucket_name  = module.s3.gold_bucket_name
 }
