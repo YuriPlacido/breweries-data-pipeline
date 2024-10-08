@@ -1,4 +1,5 @@
-version: '3.7'
+# docker-compose.yml
+
 services:
   postgres:
     image: postgres:13
@@ -27,6 +28,67 @@ services:
       start_period: 30s
     restart: always
 
+  airflow-init:
+    build:
+      context: ./airflow
+      dockerfile: Dockerfile
+    environment:
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
+      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
+      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+      AIRFLOW__CORE__FERNET_KEY: ''
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'false'
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      _AIRFLOW_DB_MIGRATE: 'true'
+      _AIRFLOW_WWW_USER_CREATE: 'true'
+      _AIRFLOW_WWW_USER_USERNAME: ${_AIRFLOW_WWW_USER_USERNAME:-airflow}
+      _AIRFLOW_WWW_USER_PASSWORD: ${_AIRFLOW_WWW_USER_PASSWORD:-airflow}
+      _PIP_ADDITIONAL_REQUIREMENTS: ''
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_DEFAULT_REGION: sa-east-1
+      BRONZE_BUCKET_NAME: breweries-data-pipeline-bronze-dev
+      SILVER_BUCKET_NAME: breweries-data-pipeline-silver-dev
+      GOLD_BUCKET_NAME: breweries-data-pipeline-gold-dev
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+      - ./aws_credentials/credentials_airflow:/root/.aws/credentials_airflow:ro
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        # Inicializar o banco de dados do Airflow
+        airflow db init
+
+        # Extrair as credenciais AWS do arquivo montado
+        export AWS_ACCESS_KEY_ID=$(grep aws_access_key_id /root/.aws/credentials_airflow | awk -F' = ' '{print $2}')
+        export AWS_SECRET_ACCESS_KEY=$(grep aws_secret_access_key /root/.aws/credentials_airflow | awk -F' = ' '{print $2}')
+
+        # Adicionar a conexão AWS no Airflow
+        airflow connections add 'aws_default' \
+          --conn-type 'aws' \
+          --conn-login $AWS_ACCESS_KEY_ID \
+          --conn-password $AWS_SECRET_ACCESS_KEY \
+          --conn-extra '{"region_name":"sa-east-1"}'
+
+        # Criar usuário admin no Airflow
+        airflow users create \
+          --username ${_AIRFLOW_WWW_USER_USERNAME:-airflow} \
+          --password ${_AIRFLOW_WWW_USER_PASSWORD:-airflow} \
+          --firstname Air \
+          --lastname Flow \
+          --role Admin \
+          --email airflow@example.com
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
   airflow-webserver:
     build:
       context: ./airflow
@@ -48,6 +110,8 @@ services:
       AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
       AWS_DEFAULT_REGION: sa-east-1
       BRONZE_BUCKET_NAME: breweries-data-pipeline-bronze-dev
+      SILVER_BUCKET_NAME: breweries-data-pipeline-silver-dev
+      GOLD_BUCKET_NAME: breweries-data-pipeline-gold-dev
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/logs:/opt/airflow/logs
@@ -86,6 +150,8 @@ services:
       AWS_SHARED_CREDENTIALS_FILE: /root/.aws/credentials_airflow
       AWS_DEFAULT_REGION: sa-east-1
       BRONZE_BUCKET_NAME: breweries-data-pipeline-bronze-dev
+      SILVER_BUCKET_NAME: breweries-data-pipeline-silver-dev
+      GOLD_BUCKET_NAME: breweries-data-pipeline-gold-dev
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/logs:/opt/airflow/logs
@@ -171,47 +237,6 @@ services:
       retries: 5
       start_period: 30s
     restart: always
-
-  airflow-init:
-    build:
-      context: ./airflow
-      dockerfile: Dockerfile
-    environment:
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
-      AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
-      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
-      AIRFLOW__CORE__EXECUTOR: CeleryExecutor
-      AIRFLOW__CORE__FERNET_KEY: ''
-      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'false'
-      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
-      _AIRFLOW_DB_MIGRATE: 'true'
-      _AIRFLOW_WWW_USER_CREATE: 'true'
-      _AIRFLOW_WWW_USER_USERNAME: ${_AIRFLOW_WWW_USER_USERNAME:-airflow}
-      _AIRFLOW_WWW_USER_PASSWORD: ${_AIRFLOW_WWW_USER_PASSWORD:-airflow}
-      _PIP_ADDITIONAL_REQUIREMENTS: ''
-    volumes:
-      - ./airflow/dags:/opt/airflow/dags
-      - ./airflow/logs:/opt/airflow/logs
-      - ./airflow/plugins:/opt/airflow/plugins
-      - ./aws_credentials/credentials_airflow:/root/.aws/credentials_airflow:ro
-    entrypoint: /bin/bash
-    command:
-      - -c
-      - |
-        airflow db init
-        airflow users create \
-          --username ${_AIRFLOW_WWW_USER_USERNAME:-airflow} \
-          --password ${_AIRFLOW_WWW_USER_PASSWORD:-airflow} \
-          --firstname Air \
-          --lastname Flow \
-          --role Admin \
-          --email airflow@example.com
-    restart: "no"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
 
 volumes:
   postgres-db-volume:

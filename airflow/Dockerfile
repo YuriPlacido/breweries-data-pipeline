@@ -1,4 +1,4 @@
-FROM apache/airflow:2.8.0
+FROM apache/airflow:2.5.0
 
 # Switch para usuário root para instalar pacotes do sistema
 USER root
