@@ -1,9 +1,10 @@
 # Terraform state files
 *.tfstate
+*.tfstate.*
 *.tfstate.backup
 .terraform/
-.terraform.*
-tfplan
+.terraform/*
+.terraform.lock.hcl
 
 # Arquivos de variáveis com valores sensíveis
 *.tfvars
@@ -18,7 +19,18 @@ __pycache__/
 *.pyc
 
 # Logs
+crash.log
 *.log
+airflow/logs/*
 
-# Outros arquivos específicos do projeto
+# Diretório de credenciais
+aws_credentials/
 
+# Evitar comitar credenciais
+.env
+*.key
+*.pem
+
+# Outros arquivos temporários
+__pycache__/
+*.pyc

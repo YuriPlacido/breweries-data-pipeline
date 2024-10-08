@@ -11,12 +11,21 @@ resource "aws_iam_user_policy" "airflow_user_policy" {
   user = aws_iam_user.airflow_user.name
   policy = jsonencode({
     "Version": "2012-10-17",
-    "Statement": [{
-      "Effect": "Allow",
-      "Action": [
-        "s3:ListBucket",
-        "s3:GetObject",
-        "s3:PutObject"
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Action": [
+            "s3:ListAllMyBuckets"
+          ],
+        "Resource": "*"
+      },
+      {
+        "Effect": "Allow",
+        "Action": [
+          "s3:ListBucket",
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject"
       ],
       "Resource": [
         "${var.bronze_bucket_arn}",

@@ -1,11 +1,13 @@
 # main.tf
 
 # Chamar o módulo s3
-module "s3" {
-  source = "./modules/s3"
-
-  project_name = var.project_name
-  environment  = var.environment
+module "s3_buckets" {
+  source        = "../modules/s3"
+  
+  project_name  = var.project_name
+  environment   = var.environment
+  aws_region    = var.aws_region
+  iam_role_arn  = var.iam_role_arn
 }
 
 # Chamar o módulo iam_role

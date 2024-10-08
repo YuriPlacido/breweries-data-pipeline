@@ -14,3 +14,8 @@ variable "environment" {
   description = "Ambiente de implantação"
   default     = "dev"
 }
+
+variable "iam_role_arn" {
+  description = "ARN da Role IAM que terá acesso aos buckets S3"
+  type        = string
+}

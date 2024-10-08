@@ -32,7 +32,8 @@ resource "aws_iam_policy" "glue_s3_policy" {
       "Action": [
         "s3:GetObject",
         "s3:PutObject",
-        "s3:ListBucket"
+        "s3:ListBucket",
+        "s3:DeleteObject"
       ],
       "Resource": [
         "${var.gold_bucket_arn}",

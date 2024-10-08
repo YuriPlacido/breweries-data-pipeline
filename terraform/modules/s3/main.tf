@@ -85,6 +85,99 @@ resource "aws_s3_bucket" "gold_bucket" {
   }
 }
 
+# Definição da Política para o Bucket Bronze
+data "aws_iam_policy_document" "bronze_bucket_policy" {
+  statement {
+    sid    = "AllowAirflowAccessBronze"
+    effect = "Allow"
+
+    principals {
+      type        = "AWS"
+      identifiers = [var.iam_role_arn]
+    }
+
+    actions = [
+      "s3:ListBucket",
+      "s3:GetObject",
+      "s3:PutObject",
+      "s3:DeleteObject"
+    ]
+
+    resources = [
+      aws_s3_bucket.bronze_bucket.arn,
+      "${aws_s3_bucket.bronze_bucket.arn}/*"
+    ]
+  }
+}
+
+# Aplicando a Política ao Bucket Bronze
+resource "aws_s3_bucket_policy" "bronze_bucket_policy" {
+  bucket = aws_s3_bucket.bronze_bucket.id
+  policy = data.aws_iam_policy_document.bronze_bucket_policy.json
+}
+
+# Definição da Política para o Bucket Silver
+data "aws_iam_policy_document" "silver_bucket_policy" {
+  statement {
+    sid    = "AllowAirflowAccessSilver"
+    effect = "Allow"
+
+    principals {
+      type        = "AWS"
+      identifiers = [var.iam_role_arn]
+    }
+
+    actions = [
+      "s3:ListBucket",
+      "s3:GetObject",
+      "s3:PutObject",
+      "s3:DeleteObject"
+    ]
+
+    resources = [
+      aws_s3_bucket.silver_bucket.arn,
+      "${aws_s3_bucket.silver_bucket.arn}/*"
+    ]
+  }
+}
+
+# Aplicando a Política ao Bucket Silver
+resource "aws_s3_bucket_policy" "silver_bucket_policy" {
+  bucket = aws_s3_bucket.silver_bucket.id
+  policy = data.aws_iam_policy_document.silver_bucket_policy.json
+}
+
+# Definição da Política para o Bucket Gold
+data "aws_iam_policy_document" "gold_bucket_policy" {
+  statement {
+    sid    = "AllowAirflowAccessGold"
+    effect = "Allow"
+
+    principals {
+      type        = "AWS"
+      identifiers = [var.iam_role_arn]
+    }
+
+    actions = [
+      "s3:ListBucket",
+      "s3:GetObject",
+      "s3:PutObject",
+      "s3:DeleteObject"
+    ]
+
+    resources = [
+      aws_s3_bucket.gold_bucket.arn,
+      "${aws_s3_bucket.gold_bucket.arn}/*"
+    ]
+  }
+}
+
+# Aplicando a Política ao Bucket Gold
+resource "aws_s3_bucket_policy" "gold_bucket_policy" {
+  bucket = aws_s3_bucket.gold_bucket.id
+  policy = data.aws_iam_policy_document.gold_bucket_policy.json
+}
+
 # Outputs
 output "bronze_bucket_name" {
   value = aws_s3_bucket.bronze_bucket.bucket
@@ -96,4 +189,19 @@ output "silver_bucket_name" {
 
 output "gold_bucket_name" {
   value = aws_s3_bucket.gold_bucket.bucket
+}
+
+output "bronze_bucket_policy" {
+  description = "Política do Bucket Bronze"
+  value       = aws_s3_bucket_policy.bronze_bucket_policy.policy
+}
+
+output "silver_bucket_policy" {
+  description = "Política do Bucket Silver"
+  value       = aws_s3_bucket_policy.silver_bucket_policy.policy
+}
+
+output "gold_bucket_policy" {
+  description = "Política do Bucket Gold"
+  value       = aws_s3_bucket_policy.gold_bucket_policy.policy
 }

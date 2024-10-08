@@ -14,3 +14,8 @@ variable "environment" {
   description = "Ambiente de implantação"
   type        = string
 }
+
+variable "iam_role_arn" {
+  description = "ARN da Role IAM que terá acesso aos buckets"
+  type        = string
+}
