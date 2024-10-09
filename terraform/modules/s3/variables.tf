@@ -19,3 +19,13 @@ variable "iam_role_arn" {
   description = "ARN da Role IAM que terá acesso aos buckets"
   type        = string
 }
+
+variable "lambda_arn" {
+  description = "ARN da função Lambda para ser disparada pelo S3"
+  type        = string
+}
+
+variable "lambda_name" {
+  description = "Nome da função Lambda"
+  type        = string
+}

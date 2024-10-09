@@ -172,6 +172,15 @@ data "aws_iam_policy_document" "gold_bucket_policy" {
   }
 }
 
+# Permissão para o S3 invocar a Lambda
+resource "aws_lambda_permission" "allow_s3_invoke_lambda" {
+  statement_id  = "AllowS3ToInvokeLambda"
+  action        = "lambda:InvokeFunction"
+  function_name = var.lambda_name
+  principal     = "s3.amazonaws.com"
+  source_arn    = aws_s3_bucket.gold_bucket.arn
+}
+
 # Aplicando a Política ao Bucket Gold
 resource "aws_s3_bucket_policy" "gold_bucket_policy" {
   bucket = aws_s3_bucket.gold_bucket.id

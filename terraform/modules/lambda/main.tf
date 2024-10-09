@@ -1,5 +1,3 @@
-# modules/lambda/main.tf
-
 # Função Lambda
 resource "aws_lambda_function" "start_glue_crawler" {
   function_name = "${var.project_name}-start-glue-crawler-${var.environment}"
@@ -9,6 +7,13 @@ resource "aws_lambda_function" "start_glue_crawler" {
 
   filename         = "${path.module}/lambda_function.zip"
   source_code_hash = filebase64sha256("${path.module}/lambda_function.zip")
+
+  # Passando o nome do Glue Crawler como variável de ambiente
+  environment {
+    variables = {
+      CRAWLER_NAME = var.crawler_name
+    }
+  }
 }
 
 # Configurar o trigger do S3
